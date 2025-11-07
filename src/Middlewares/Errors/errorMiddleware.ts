@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 import { NextFunction, Request, Response } from 'express';
 
-import AppError from '../../Utilities/Errors/appError';
+import AppError from '../../utils/errors/appError';
 
 export const sendErrorDev = (err: AppError, res: Response) => {
     const statusCode = err.statusCode || 500;
@@ -32,7 +32,7 @@ export const errorHandler = (
     req: Request,
     res: Response,
     next: NextFunction
-) => {
+): unknown => {
     err.statusCode = err.statusCode || 500;
     err.status = err.status || 'error';
     if (process.env.ENV === 'development') {
@@ -44,7 +44,6 @@ export const errorHandler = (
         if (error.name === 'ExpiredCodeException') {
             const { message } = error;
             const status = error.statusCode || 401;
-
             return res.status(status).json({
                 success: false,
                 message
@@ -62,6 +61,13 @@ export const errorHandler = (
             return res.status(status).json({
                 success: false,
                 error: error.message
+            });
+        }
+        if (err?.message === 'Not allowed by CORS') {
+            return res.status(403).json({
+                success: false,
+                error: 'CORS policy violation',
+                message: 'Origin not allowed'
             });
         }
         if (error.name === 'TokenExpiredError') {

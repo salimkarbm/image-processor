@@ -7,7 +7,9 @@
     "extends": [
         "eslint-config-airbnb-base",
         "plugin:@typescript-eslint/recommended",
-        "plugin:prettier/recommended"
+        "plugin:prettier/recommended",
+        "prettier",
+        "eslint:recommended"
     ],
 
     "parser": "@typescript-eslint/parser",
@@ -46,7 +48,9 @@
       "settings": {
         "import/resolver": {
           "node": {
-            "extensions": [".js", ".ts"]
+            "extensions": [".js", ".ts"],
+             "paths": ["./"],
+            "moduleDirectory": ["node_modules", "src"]
           }
         }
     }
