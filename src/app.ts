@@ -7,8 +7,9 @@ import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 import swaggerOptions from './swagger-jsdoc';
-import AppError from './utils/errors/appError';
-import { errorHandler } from './middlewares/Errors/errorMiddleware';
+import AppError from './shared/utils/errors/appError';
+import { errorHandler } from './middlewares/errors/errorMiddleware';
+import router from './routes/v1';
 
 dotenv.config();
 
@@ -105,76 +106,8 @@ app.get('/', async (req: Request, res: Response) => {
     res.json({ status: 'ok', message: 'Welcome' });
 });
 
-app.get('/health', async (req: Request, res: Response) => {
-    res.contentType('json');
-    res.json({
-        status: 'ok',
-        message: 'Service is up and running',
-        timestamp: new Date().toISOString(),
-        service: 'Image Processor API'
-    });
-});
-
-app.get('/api/v1/security/info', (req: Request, res: Response) => {
-    res.json({
-        security: {
-            https: req.secure || req.headers['x-forwarded-proto'] === 'https',
-            headers: {
-                helmet: 'enabled',
-                cors: 'configured',
-                csp: 'enabled',
-                hsts: 'enabled'
-            },
-            authentication: {
-                jwt: 'supported',
-                apiKey: 'supported',
-                rateLimiting: 'enabled'
-            },
-            validation: {
-                inputSanitization: 'enabled',
-                xssProtection: 'enabled',
-                nosqlInjectionPrevention: 'enabled'
-            },
-            encryption: {
-                piiEncryption: 'enabled',
-                passwordHashing: 'bcrypt',
-                algorithm: 'AES-256-CBC'
-            }
-        },
-        recommendations: [
-            'Use HTTPS in production',
-            'Implement proper logging and monitoring',
-            'Regular security audits',
-            'Keep dependencies updated',
-            'Use environment variables for secrets'
-        ]
-    });
-});
-
-app.get('/api/v1/security/headers', (req: Request, res: Response) => {
-    const securityHeaders = {
-        'content-security-policy': res.get('Content-Security-Policy')
-            ? 'present'
-            : 'missing',
-        'strict-transport-security': res.get('Strict-Transport-Security')
-            ? 'present'
-            : 'missing',
-        'x-content-type-options': res.get('X-Content-Type-Options')
-            ? 'present'
-            : 'missing',
-        'x-frame-options': res.get('X-Frame-Options') ? 'present' : 'missing',
-        'x-xss-protection': res.get('X-XSS-Protection') ? 'present' : 'missing'
-    } as const;
-    res.json({
-        success: true,
-        securityHeaders,
-        requestHeaders: {
-            userAgent: req.get('User-Agent'),
-            origin: req.get('Origin'),
-            referer: req.get('Referer')
-        }
-    });
-});
+// Routes
+app.use('/api/v1', router);
 
 // Errors
 app.all('*', (req: Request, res: Response, next: NextFunction) => {
