@@ -27,3 +27,104 @@ paths:
                   environment:
                     type: string
                     example: "development"
+
+  /security/info:
+    get:
+      tags:
+        - Security
+      summary: Get security recommendations
+      description: Returns security recommendations for the API
+      responses:
+        '200':
+          description: Security recommendations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  security:
+                    type: object
+                    properties:
+                      https:
+                        type: string
+                        example: "All endpoints should use HTTPS"
+                      headers:
+                        type: object
+                        properties:
+                          helmet:
+                            type: string
+                            example: "Use Helmet to set secure HTTP headers"
+                          cors:
+                            type: string
+                            example: "Enable CORS with appropriate settings"  
+                          csp:
+                            type: string
+                            example: "Implement Content Security Policy (CSP)"  
+                          hsts:
+                            type: string
+                            example: "Use HTTP Strict Transport Security (HSTS)"
+                      authentication:
+                        type: object
+                        properties:
+                          jwt:
+                            type: string
+                            example: "Use JWT for stateless authentication"
+                          oauth2:
+                            type: string
+                            example: "Implement OAuth2 for secure authorization"
+                          rateLimiting:
+                            type: string
+                            example: "Implement rate limiting to prevent abuse"
+                          apiKey:
+                            type: string
+                            example: "Use API keys for identifying clients"  
+                      validation:
+                        type: object
+                        properties:
+                          inputSanitization:
+                            type: string
+                            example: "Sanitize all user inputs to prevent injection attacks"
+                          schemaValidation:
+                            type: string
+                            example: "Use schema validation for request payloads"
+                          errorHandling:
+                            type: string
+                            example: "Implement proper error handling to avoid information leakage" 
+                          noSQLInjection:
+                            type: string
+                            example: "Use parameterized queries to prevent NoSQL injection"
+                          xssProtection:
+                            type: string
+                            example: "Implement measures to prevent Cross-Site Scripting (XSS) attacks"
+                      encryption:
+                        type: object
+                        properties:
+                          dataAtRest:
+                            type: string
+                            example: "Encrypt sensitive data at rest using AES-256"
+                          dataInTransit:
+                            type: string
+                            example: "Use TLS 1.2 or higher for data in transit"
+                          keyManagement:
+                            type: string
+                            example: "Implement secure key management practices"  
+                          passwordStorage:
+                            type: string
+                            example: "Store passwords securely using bcrypt hashing"
+                          passwordHashing:
+                            type: string
+                            example: "Use strong hashing algorithms for password storage"  
+                          algorithms:
+                            type: string
+                            example: "Use industry-standard encryption algorithms"
+                          piiProtection:
+                            type: string
+                            example: "Implement measures to protect Personally Identifiable Information (PII)"                       
+                  recommendations:
+                    type: array
+                    items:
+                      type: string
+                    example: 
+                      - "Use HTTPS for all endpoints"
+                      - "Implement rate limiting"
+                      - "Validate all input data"                  
