@@ -127,4 +127,64 @@ paths:
                     example: 
                       - "Use HTTPS for all endpoints"
                       - "Implement rate limiting"
-                      - "Validate all input data"                  
+                      - "Validate all input data"              
+
+  /security/headers:
+    get:
+      tags:
+        - Security
+      summary: Get security headers
+      description: Returns security headers implemented in the API
+      responses:
+        '200':
+          description: Security headers retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  securityHeaders:
+                    type: object
+                    properties:
+                      content-security-policy:
+                        type: string
+                        example: "default-src 'self'; script-src 'self' 'unsafe-inline'; object-src 'none';"
+                      x-content-type-options:
+                        type: string
+                        example: "nosniff"
+                      x-frame-options:
+                        type: string
+                        example: "DENY"
+                      strict-transport-security:
+                        type: string
+                        example: "max-age=31536000; includeSubDomains"
+                      x-xss-protection:
+                        type: string
+                        example: "1; mode=block"
+                      referrer-policy:
+                        type: string
+                        example: "no-referrer"
+                      permissions-policy:
+                        type: string
+                        example: "geolocation=(), microphone=()"
+                  requestHeaders:
+                    type: object
+                    properties:
+                      host:
+                        type: string
+                        example: "api.example.com"
+                      user-agent:
+                        type: string
+                        example: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+                      accept:
+                        type: string
+                        example: "application/json"
+                      accept-encoding:
+                        type: string
+                        example: "gzip, deflate, br"
+                      connection:
+                        type: string
+                        example: "keep-alive"                   
