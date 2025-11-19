@@ -27,4 +27,4 @@ export const configuration = () => {
     };
 };
 
-export const envConfig = configuration();
+export const ENV_CONFIG = configuration();
