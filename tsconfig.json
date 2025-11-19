@@ -111,4 +111,7 @@
   // },
   //"include": ["src/**/*", "types/**/*"],
   //"exclude": ["node_modules"]
+
+  "emitDecoratorMetadata": true,
+"experimentalDecorators": true,
 }

@@ -1,6 +1,7 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
+import 'reflect-metadata';
 import express, { Application, Request, Response, NextFunction } from 'express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import rateLimit from 'express-rate-limit';
@@ -10,6 +11,7 @@ import swaggerOptions from './swagger-jsdoc';
 import AppError from './shared/utils/errors/appError';
 import { errorHandler } from './middlewares/errors/errorMiddleware';
 import router from './routes/v1';
+import AppDataSource from './database/typeOrm.config';
 
 dotenv.config();
 
@@ -116,14 +118,23 @@ app.all('*', (req: Request, res: Response, next: NextFunction) => {
 app.use(errorHandler);
 
 // Listen for server connections
-const server = app.listen(PORT, () =>
-    console.log(
-        `
-        🔐 API Security Example Server running on port ${address}
-        📚 API Documentation available at: http://localhost:${PORT}/api-docs
-        `
-    )
-);
+const server = AppDataSource.initialize()
+    .then(() => {
+        app.listen(PORT, () =>
+            console.log(
+                `
+            🚀 Database connected successfully
+            🚀 API Server running on port ${PORT}
+            🚀 API Server running on address ${address}
+            📚 API Documentation available at: http://localhost:${PORT}/api-docs
+           `
+            )
+        );
+    })
+    .catch((err) => {
+        console.error('DB connection failed', err);
+        process.exit(1);
+    });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
