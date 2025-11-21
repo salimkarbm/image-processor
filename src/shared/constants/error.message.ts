@@ -1,4 +1,4 @@
-export const ERROR_MESSAGES = () => {
+export const ERRORS = () => {
     return {
         NOT_FOUND: (name: string, id?: string) => {
             if (!id) {
@@ -19,4 +19,4 @@ export const ERROR_MESSAGES = () => {
     };
 };
 
-export const ERROR_MESSAGE = ERROR_MESSAGES();
+export const ERROR_MESSAGE = ERRORS();

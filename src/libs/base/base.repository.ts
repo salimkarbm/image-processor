@@ -9,7 +9,7 @@ import {
     SelectQueryBuilder
 } from 'typeorm';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import { PaginatedQuery } from '../../shared/types/paginate.type';
+import { PaginatedQuery } from '../../shared/types';
 import { dbTimeStamp } from '../../shared/utils';
 import BaseEntity from '../../repositories/base.entity';
 import AppError from '../../shared/utils/errors/appError';

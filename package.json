@@ -42,9 +42,12 @@
     },
     "homepage": "https://github.com/salimkarbm/starter#readme",
     "dependencies": {
+        "@types/bcrypt": "^6.0.0",
         "@types/compression": "^1.8.1",
         "@types/swagger-jsdoc": "^6.0.4",
         "@types/swagger-ui-express": "^4.1.8",
+        "@types/validator": "^13.15.10",
+        "bcrypt": "^6.0.0",
         "compression": "^1.8.1",
         "cors": "^2.8.5",
         "dotenv": "^16.1.4",
@@ -56,7 +59,9 @@
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.1",
         "typeorm": "^0.3.27",
-        "xss": "^1.0.15"
+        "validator": "^13.15.23",
+        "xss": "^1.0.15",
+        "zod": "^4.1.12"
     },
     "devDependencies": {
         "@types/cors": "^2.8.13",
@@ -73,7 +78,7 @@
         "nodemon": "^2.0.15",
         "prettier": "^3.6.2",
         "ts-node": "^10.4.0",
-        "typescript": "^4.5.5"
+        "typescript": "^5.9.3"
     },
     "engines": {
         "node": ">=16.0.0",

@@ -1,4 +1,4 @@
-export const SUCCESS_MESSAGES = () => {
+export const MESSAGES = () => {
     return {
         CREATED: (name: string) => `${name} created successfully`,
         UPDATED: (name: string) => `${name} updated successfully`,
@@ -9,4 +9,4 @@ export const SUCCESS_MESSAGES = () => {
     };
 };
 
-export const SUCCESS_MESSAGE = SUCCESS_MESSAGES();
+export const SUCCESS_MESSAGE = MESSAGES();

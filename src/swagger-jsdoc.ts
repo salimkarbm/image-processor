@@ -19,7 +19,7 @@ const swaggerOptions: swaggerJsdoc.Options = {
         },
         servers: [
             {
-                url: 'http://localhost:3000/api/v1',
+                url: 'http://localhost:8000/api/v1',
                 description: 'Development server'
             },
             {
@@ -84,44 +84,25 @@ const swaggerOptions: swaggerJsdoc.Options = {
                         }
                     }
                 },
-                CreateUserRequest: {
+                SignUpRequest: {
                     type: 'object',
-                    required: ['email', 'password', 'firstName', 'lastName'],
+                    required: ['email', 'password', 'fullName'],
                     properties: {
                         email: {
                             type: 'string',
                             format: 'email',
                             example: 'john.doe@example.com'
                         },
-                        username: {
-                            type: 'string',
-                            minLength: 3,
-                            maxLength: 50,
-                            pattern: '^[a-zA-Z0-9_]+$',
-                            example: 'johndoe123'
-                        },
                         password: {
                             type: 'string',
                             minLength: 8,
                             example: 'SecurePassword123!'
                         },
-                        firstName: {
+                        fullName: {
                             type: 'string',
                             minLength: 1,
                             maxLength: 100,
-                            example: 'John'
-                        },
-                        lastName: {
-                            type: 'string',
-                            minLength: 1,
-                            maxLength: 100,
-                            example: 'Doe'
-                        },
-                        role: {
-                            type: 'string',
-                            enum: ['admin', 'user', 'moderator'],
-                            default: 'user',
-                            example: 'user'
+                            example: 'John Doe'
                         }
                     }
                 },
