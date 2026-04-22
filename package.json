@@ -8,12 +8,17 @@
         "start": "node dist/app.js",
         "postinstall": "tsc",
         "lint": "eslint --ext .ts . --fix",
+        "watch": "nodemon --exec  ts-node src/app.ts",
         "format": "npm run prettier && npm run lint ",
         "prettier": "prettier --config .prettierrc --ignore-path .gitignore  --write './src/**/*.+(js|ts)'",
-        "jasmine": "jasmine",
         "start:dev": "npm run tsc && nodemon  ./src/app.ts",
         "start:prod": "npm run tsc && NODE_ENV=production nodemon ./src/app.js",
-        "tsc": "tsc"
+        "tsc": "tsc",
+        "clean": "rm -rf dist",
+        "type-check": "tsc --noEmit",
+        "test": "jest --detectOpenHandles",
+        "test:watch": "jest --watch",
+        "test:cov": "jest --coverage"
     },
     "repository": {
         "type": "git",
@@ -56,6 +61,8 @@
         "helmet": "^8.1.0",
         "pg": "^8.16.3",
         "reflect-metadata": "^0.2.2",
+        "save-dev": "^0.0.1-security",
+        "supertest": "^7.2.2",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.1",
         "typeorm": "^0.3.27",
@@ -64,9 +71,12 @@
         "zod": "^4.1.12"
     },
     "devDependencies": {
+        "@jest/globals": "^30.3.0",
         "@types/cors": "^2.8.13",
         "@types/express": "^4.17.17",
+        "@types/jest": "^30.0.0",
         "@types/node": "^17.0.13",
+        "@types/supertest": "^7.2.0",
         "@typescript-eslint/eslint-plugin": "^5.12.0",
         "@typescript-eslint/parser": "^5.12.0",
         "eslint": "^8.8.0",
@@ -75,10 +85,10 @@
         "eslint-plugin-import": "^2.25.4",
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-prettier": "^5.5.4",
+        "jest": "^30.3.0",
         "nodemon": "^2.0.15",
         "prettier": "^3.6.2",
-        "ts-node": "^10.4.0",
-        "typescript": "^5.9.3"
+        "ts-jest": "^29.4.9"
     },
     "engines": {
         "node": ">=16.0.0",

@@ -15,7 +15,8 @@ export const ERRORS = () => {
         PASSWORD_MISMATCH: 'Passwords do not match',
         INCORRECT_CREDENTIALS: 'INCORRECT CREDENTIALS',
         INCORRECT_PASSWORD: 'INCORRECT PASSWORD',
-        INCORRECT_EMAIL: 'INCORRECT EMAIL'
+        INCORRECT_EMAIL: 'INCORRECT EMAIL',
+        GENERIC_ERROR: 'Something went wrong'
     };
 };
 

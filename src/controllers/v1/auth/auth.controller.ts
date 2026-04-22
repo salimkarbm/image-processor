@@ -1,5 +1,4 @@
 import { NextFunction, Request, Response } from 'express';
-import AppError from '../../../shared/utils/errors/appError';
 import { HttpResponse } from '../../../shared/utils';
 import UserService from '../../../auth/auth.service';
 import { STATUS_CODE, SUCCESS_MESSAGE } from '../../../shared/constants';
@@ -11,15 +10,15 @@ export const signUp = async (
     next: NextFunction
 ) => {
     try {
-        const createUser = await userService.signUp(req, res, next);
+        const data = await userService.signUp(req);
         return HttpResponse({
             response: res,
-            data: createUser,
+            data,
             status: STATUS_CODE.CREATED,
             message: SUCCESS_MESSAGE.CREATED('User')
         });
     } catch (err) {
-        throw next(new AppError('An error occurred while creating user', 500));
+        return next(err);
     }
 };
 

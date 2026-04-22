@@ -2,29 +2,32 @@ import { DataSource } from 'typeorm';
 import { ENV_CONFIG } from '../config';
 
 export const makeDataSource = () => {
+    const isProduction = ENV_CONFIG.app_env === 'production';
+    const isDevelopment = ENV_CONFIG.app_env === 'development';
+
     const common = {
         type: ENV_CONFIG.database.DATABASE_DRIVER as 'postgres',
         entities: ['**/*.entity.ts'],
         migrations: ['src/database/migrations/*-migration.ts'],
-        migrationsRun: ENV_CONFIG.app_env !== 'development',
-        synchronize: ENV_CONFIG.app_env === 'development',
-        logging: ENV_CONFIG.app_env === 'development',
-        ssl: ENV_CONFIG.app_env === 'production',
+        migrationsRun: !isDevelopment,
+        synchronize: isDevelopment,
+        logging: isDevelopment,
         poolSize: 20,
+        ssl: isProduction,
         extra: {
-            ssl:
-                ENV_CONFIG.app_env === 'production'
-                    ? { rejectUnauthorized: false }
-                    : null
+            ssl: isProduction
+                ? { rejectUnauthorized: true } // ← verify-full behaviour
+                : null
         }
     };
 
     if (process.env.DATABASE_URL) {
         return new DataSource({
             ...common,
-            url: process.env.DATABASE_URL
+            url: `${process.env.DATABASE_URL}?sslmode=verify-full` // ← explicit
         });
     }
+
     return new DataSource({
         ...common,
         host: ENV_CONFIG.database.DATABASE_HOST,
@@ -34,4 +37,5 @@ export const makeDataSource = () => {
         database: ENV_CONFIG.database.DATABASE_NAME
     });
 };
+
 export const AppDataSource = makeDataSource();

@@ -2,7 +2,6 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
-    VersionColumn,
     BeforeInsert,
     BeforeUpdate
 } from 'typeorm';
@@ -17,7 +16,7 @@ export default class User extends BaseEntity {
     @Column({ unique: true, nullable: false, comment: 'User email address' })
     email!: string;
 
-    @Column({ nullable: false, comment: 'User role' })
+    @Column({ nullable: false, comment: 'User role', default: 'user' })
     role!: string;
 
     @Column({ nullable: false, comment: 'User password' })
@@ -31,12 +30,10 @@ export default class User extends BaseEntity {
 
     @Column({
         nullable: false,
-        comment: 'User active status'
+        comment: 'User active status',
+        default: false
     })
     isActive!: boolean;
-
-    @VersionColumn({ comment: 'System-managed optimistic-locking column' })
-    rowVersion!: number;
 
     @BeforeInsert()
     @BeforeUpdate()

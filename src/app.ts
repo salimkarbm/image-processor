@@ -16,11 +16,11 @@ import { ENV_CONFIG } from './config';
 
 dotenv.config();
 
+// Initialize express
+const app: Application = express();
+
 async function bootstrap() {
     const specs: swaggerJsdoc.Options = swaggerOptions;
-
-    // Initialize express
-    const app: Application = express();
 
     // Security middleware
     app.use(
@@ -146,3 +146,4 @@ process.on('SIGINT', () => {
     console.log('SIGINT received. Shutting down gracefully...');
     process.exit(0);
 });
+export default app;

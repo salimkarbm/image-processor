@@ -6,9 +6,9 @@ import {
     FindOptionsOrder,
     FindOptionsWhere,
     Repository,
-    SelectQueryBuilder
+    SelectQueryBuilder,
+    QueryDeepPartialEntity
 } from 'typeorm';
-import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { PaginatedQuery } from '../../shared/types';
 import { dbTimeStamp } from '../../shared/utils';
 import BaseEntity from '../../repositories/base.entity';
