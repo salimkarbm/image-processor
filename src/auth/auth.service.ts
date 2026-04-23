@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import UserRepository from '../repositories/user/user.repository';
-import { AppDataSource } from '../database/typeOrm.config';
+import { AppDataSource } from '../config/db.config';
 import AppError from '../shared/utils/errors/appError';
 import { ERROR_MESSAGE, STATUS_CODE } from '../shared/constants';
 

@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '../app';
-import { AppDataSource } from '../database/typeOrm.config';
+// import { AppDataSource } from '../database/typeOrm.config';
 
 describe('App', () => {
     // beforeEach(() => {

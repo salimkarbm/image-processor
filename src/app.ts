@@ -11,7 +11,7 @@ import swaggerOptions from './swagger-jsdoc';
 import AppError from './shared/utils/errors/appError';
 import { errorHandler } from './middlewares/errors/errorMiddleware';
 import router from './routes/v1';
-import { AppDataSource } from './database/typeOrm.config';
+import { AppDataSource } from './config/db.config';
 import { ENV_CONFIG } from './config';
 
 dotenv.config();
@@ -86,10 +86,10 @@ async function bootstrap() {
         swaggerUi.serve,
         swaggerUi.setup(specs, {
             customCss: `
-    .swagger-ui .topbar { display: none }
-    .swagger-ui .info { margin: 20px 0 }
-    .swagger-ui .scheme-container { margin: 20px 0 }
-  `,
+                .swagger-ui .topbar { display: none }
+                .swagger-ui .info { margin: 20px 0 }
+                .swagger-ui .scheme-container { margin: 20px 0 }
+            `,
             customSiteTitle: 'Image Processor API Documentation',
             swaggerOptions: {
                 persistAuthorization: true,
@@ -121,11 +121,9 @@ async function bootstrap() {
     AppDataSource.initialize().then(() => {
         app.listen(PORT, () =>
             console.log(
-                `
-                🚀 Database connected successfully
+                `🚀 Database connected successfully
                 🚀 API Server running on port ${PORT}
-                📚 API Documentation available at: http://localhost:${PORT}/api-docs
-               `
+                📚 API Documentation available at: http://localhost:${PORT}/api-docs`
             )
         );
     });

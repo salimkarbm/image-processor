@@ -3,3 +3,4 @@ package-lock.json
 dist
 .env
 coverage/
+/src/database/migrations/*.ts

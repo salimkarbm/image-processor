@@ -1,23 +1,37 @@
 import { DataSource } from 'typeorm';
-import { ENV_CONFIG } from '../config';
+import { join } from 'path';
+import dotenv from 'dotenv';
+import { ENV_CONFIG } from '.';
+
+dotenv.config();
 
 export const makeDataSource = () => {
     const isProduction = ENV_CONFIG.app_env === 'production';
-    const isDevelopment = ENV_CONFIG.app_env === 'development';
+    // const isDevelopment = ENV_CONFIG.app_env === 'development';
 
     const common = {
         type: ENV_CONFIG.database.DATABASE_DRIVER as 'postgres',
-        entities: ['**/*.entity.ts'],
-        migrations: ['src/database/migrations/*-migration.ts'],
-        migrationsRun: !isDevelopment,
-        synchronize: isDevelopment,
-        logging: isDevelopment,
+        // entities: ['**/*.entity.ts'],
+        // migrations: ['src/database/migrations/*-migration.ts'],
+        // migrationsRun: !isDevelopment,
+        // logging: isDevelopment,
+        entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
+        migrations: [join(__dirname, '..', 'database/migrations', '*.{ts,js}')],
+        migrationsTableName: 'migrations',
+        migrationsRun: false,
+        synchronize: false,
         poolSize: 20,
         ssl: isProduction,
         extra: {
             ssl: isProduction
                 ? { rejectUnauthorized: true } // ← verify-full behaviour
-                : null
+                : null,
+            connectionTimeoutMillis: 10000,
+            query_timeout: 10000,
+            statement_timeout: 10000,
+            poolSize: 10,
+            max: 20,
+            idleTimeoutMillis: 30000
         }
     };
 
