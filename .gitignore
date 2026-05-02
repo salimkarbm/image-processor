@@ -4,3 +4,4 @@ dist
 .env
 coverage/
 /src/database/migrations/*.ts
+/migrations

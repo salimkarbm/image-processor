@@ -20,128 +20,128 @@ dotenv.config();
 const app: Application = express();
 
 async function bootstrap() {
-    const specs: swaggerJsdoc.Options = swaggerOptions;
+  const specs: swaggerJsdoc.Options = swaggerOptions;
 
-    // Security middleware
-    app.use(
-        helmet({
-            contentSecurityPolicy: {
-                directives: {
-                    defaultSrc: ["'self'"],
-                    styleSrc: ["'self'", "'unsafe-inline'"],
-                    scriptSrc: ["'self'"],
-                    imgSrc: ["'self'", 'data:', 'https:']
-                }
-            },
-            hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }
-        })
-    );
-
-    const corsOptions: cors.CorsOptions = {
-        origin(origin, callback) {
-            const allowedOrigins = [
-                'http://localhost:8000',
-                'http://localhost:3001',
-                'https://yourdomain.com'
-            ];
-            if (!origin || allowedOrigins.includes(origin))
-                return callback(null, true);
-            return callback(new Error('Not allowed by CORS'));
+  // Security middleware
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
         },
-        credentials: true,
-        optionsSuccessStatus: 200,
-        methods: ['GET', 'POST', 'PUT', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key']
-    };
-    app.use(cors(corsOptions));
+      },
+      hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    }),
+  );
 
-    const limiter = rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 100,
-        message: {
-            error: 'Too many requests from this IP',
-            retryAfter: '15 minutes'
-        }
-    });
-    app.use('/api/', limiter);
+  const corsOptions: cors.CorsOptions = {
+    origin(origin, callback) {
+      const allowedOrigins = [
+        'http://localhost:8000',
+        'http://localhost:3001',
+        'https://yourdomain.com',
+      ];
+      if (!origin || allowedOrigins.includes(origin))
+        return callback(null, true);
+      return callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  };
+  app.use(cors(corsOptions));
 
-    app.use(express.json({ limit: '10mb' }));
-    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-    app.use(compression());
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    message: {
+      error: 'Too many requests from this IP',
+      retryAfter: '15 minutes',
+    },
+  });
+  app.use('/api/', limiter);
 
-    const enforceHTTPS = (req: Request, res: Response, next: NextFunction) => {
-        if (
-            process.env.NODE_ENV === 'production' &&
-            req.header('x-forwarded-proto') !== 'https'
-        ) {
-            return res.redirect(`https://${req.header('host')}${req.url}`);
-        }
-        next();
-    };
-    app.use(enforceHTTPS);
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(compression());
 
-    // Swagger UI setup
-    app.use(
-        '/api-docs',
-        swaggerUi.serve,
-        swaggerUi.setup(specs, {
-            customCss: `
+  const enforceHTTPS = (req: Request, res: Response, next: NextFunction) => {
+    if (
+      process.env.NODE_ENV === 'production' &&
+      req.header('x-forwarded-proto') !== 'https'
+    ) {
+      return res.redirect(`https://${req.header('host')}${req.url}`);
+    }
+    next();
+  };
+  app.use(enforceHTTPS);
+
+  // Swagger UI setup
+  app.use(
+    '/api-docs',
+    swaggerUi.serve,
+    swaggerUi.setup(specs, {
+      customCss: `
                 .swagger-ui .topbar { display: none }
                 .swagger-ui .info { margin: 20px 0 }
                 .swagger-ui .scheme-container { margin: 20px 0 }
             `,
-            customSiteTitle: 'Image Processor API Documentation',
-            swaggerOptions: {
-                persistAuthorization: true,
-                displayRequestDuration: true,
-                filter: true,
-                showCommonExtensions: true
-            }
-        })
-    );
+      customSiteTitle: 'Image Processor API Documentation',
+      swaggerOptions: {
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        filter: true,
+        showCommonExtensions: true,
+      },
+    }),
+  );
 
-    const PORT = ENV_CONFIG.port || 3000;
+  const PORT = ENV_CONFIG.port || 3000;
 
-    // Define index route
-    app.get('/', async (req: Request, res: Response) => {
-        res.contentType('json');
-        res.json({ status: 'ok', message: 'Welcome' });
-    });
+  // Define index route
+  app.get('/', async (req: Request, res: Response) => {
+    res.contentType('json');
+    res.json({ status: 'ok', message: 'Welcome' });
+  });
 
-    // Routes
-    app.use('/api/v1', router);
+  // Routes
+  app.use('/api/v1', router);
 
-    // Errors
-    app.all('*', (req: Request, res: Response, next: NextFunction) => {
-        next(new AppError(`can't find ${req.originalUrl} on server!`, 404));
-    });
-    app.use(errorHandler);
+  // Errors
+  app.all('*', (req: Request, res: Response, next: NextFunction) => {
+    next(new AppError(`can't find ${req.originalUrl} on server!`, 404));
+  });
+  app.use(errorHandler);
 
-    // Listen for server
-    AppDataSource.initialize().then(() => {
-        app.listen(PORT, () =>
-            console.log(
-                `🚀 Database connected successfully
+  // Listen for server
+  AppDataSource.initialize().then(() => {
+    app.listen(PORT, () =>
+      console.log(
+        `🚀 Database connected successfully
                 🚀 API Server running on port ${PORT}
-                📚 API Documentation available at: http://localhost:${PORT}/api-docs`
-            )
-        );
-    });
+                📚 API Documentation available at: http://localhost:${PORT}/api-docs`,
+      ),
+    );
+  });
 }
 
 bootstrap().catch((err) => {
-    console.error('?❌ Startup failed', err);
-    process.exit(1);
+  console.error('?❌ Startup failed', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Shutting down gracefully...');
-    process.exit(0);
+  console.log('SIGTERM received. Shutting down gracefully...');
+  process.exit(0);
 });
 
 process.on('SIGINT', () => {
-    console.log('SIGINT received. Shutting down gracefully...');
-    process.exit(0);
+  console.log('SIGINT received. Shutting down gracefully...');
+  process.exit(0);
 });
 export default app;

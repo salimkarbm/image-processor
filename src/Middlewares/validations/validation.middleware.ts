@@ -10,13 +10,13 @@ import validator from 'validator';
  * @returns The sanitized string.
  */
 export const sanitizeInput = (value: string, rules?: string[]): string => {
-    let sanitized = value;
-    if (!rules || typeof value !== 'string') return sanitized;
-    if (rules.includes('trim')) sanitized = sanitized.trim();
-    if (rules.includes('escape')) sanitized = validator.escape(sanitized);
-    if (rules.includes('xss')) sanitized = xss(sanitized);
-    if (rules.includes('toLowerCase')) sanitized = sanitized.toLowerCase();
-    return sanitized;
+  let sanitized = value;
+  if (!rules || typeof value !== 'string') return sanitized;
+  if (rules.includes('trim')) sanitized = sanitized.trim();
+  if (rules.includes('escape')) sanitized = validator.escape(sanitized);
+  if (rules.includes('xss')) sanitized = xss(sanitized);
+  if (rules.includes('toLowerCase')) sanitized = sanitized.toLowerCase();
+  return sanitized;
 };
 
 /**
@@ -27,43 +27,43 @@ export const sanitizeInput = (value: string, rules?: string[]): string => {
  */
 
 export const validateInputWithZod =
-    (
-        schema: z.ZodObject<any>,
-        sanitizeRules?: Record<
-            string,
-            Array<'trim' | 'escape' | 'xss' | 'toLowerCase'>
-        >
-    ) =>
-    (req: Request, res: Response, next: NextFunction): void => {
-        try {
-            const parsedData = schema.parse(req.body);
+  (
+    schema: z.ZodObject<any>,
+    sanitizeRules?: Record<
+      string,
+      Array<'trim' | 'escape' | 'xss' | 'toLowerCase'>
+    >,
+  ) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    try {
+      const parsedData = schema.parse(req.body);
 
-            // Apply sanitization if defined
-            if (sanitizeRules) {
-                Object.entries(sanitizeRules).forEach(([field, rules]) => {
-                    if (parsedData[field]) {
-                        parsedData[field] = sanitizeInput(
-                            parsedData[field] as string,
-                            rules
-                        );
-                    }
-                });
-            }
+      // Apply sanitization if defined
+      if (sanitizeRules) {
+        Object.entries(sanitizeRules).forEach(([field, rules]) => {
+          if (parsedData[field]) {
+            parsedData[field] = sanitizeInput(
+              parsedData[field] as string,
+              rules,
+            );
+          }
+        });
+      }
 
-            req.body = parsedData;
-            next();
-        } catch (error) {
-            if (error instanceof ZodError) {
-                res.status(400).json({
-                    success: false,
-                    error: 'Validation failed',
-                    details: error.issues.map((issue) => ({
-                        path: issue.path.join('.'),
-                        message: issue.message
-                    }))
-                });
-                return;
-            }
-            next(error);
-        }
-    };
+      req.body = parsedData;
+      next();
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation failed',
+          details: error.issues.map((issue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+          })),
+        });
+        return;
+      }
+      next(error);
+    }
+  };
