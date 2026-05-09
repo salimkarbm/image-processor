@@ -21,10 +21,10 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js",
-    "migration:generate": "npm run typeorm -- migration:generate -d src/config/db.config.ts",
-    "migration:run": "npm run typeorm -- migration:run -d src/config/db.config.ts",
-    "migration:revert": "npm run typeorm -- migration:revert -d src/config/db.config.ts",
-    "migration:create": "npm run typeorm -- migration:create -d src/config/db.config.ts"
+    "migration:generate": "npm run typeorm -- migration:generate -d src/config/typeorm.config.ts",
+    "migration:run": "npm run typeorm -- migration:run -d src/config/typeorm.config.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/config/typeorm.config.ts",
+    "migration:create": "npm run typeorm -- migration:create -d src/config/typeorm.config.ts"
   },
   "repository": {
     "type": "git",
@@ -53,6 +53,7 @@
   },
   "homepage": "https://github.com/salimkarbm/starter#readme",
   "dependencies": {
+    "@nestjs/mapped-types": "*",
     "@types/bcrypt": "^6.0.0",
     "@types/compression": "^1.8.1",
     "@types/swagger-jsdoc": "^6.0.4",

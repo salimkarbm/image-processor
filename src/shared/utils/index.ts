@@ -1,2 +1,2 @@
 export * from './errors/appError';
-export * from './function';
+export * from './helpers';

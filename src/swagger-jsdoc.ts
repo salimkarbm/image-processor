@@ -151,20 +151,42 @@ const swaggerOptions: swaggerJsdoc.Options = {
               type: 'array',
               items: {
                 oneOf: [
-                  { $ref: '#/components/schemas/User' },
-                  { $ref: '#/components/schemas/Product' },
+                  {
+                    $ref: '#/components/schemas/User',
+                  },
+                  {
+                    $ref: '#/components/schemas/Product',
+                  },
                 ],
               },
             },
             pagination: {
               type: 'object',
               properties: {
-                page: { type: 'integer', example: 1 },
-                limit: { type: 'integer', example: 10 },
-                totalPages: { type: 'integer', example: 5 },
-                totalItems: { type: 'integer', example: 50 },
-                hasNext: { type: 'boolean', example: true },
-                hasPrev: { type: 'boolean', example: false },
+                page: {
+                  type: 'integer',
+                  example: 1,
+                },
+                limit: {
+                  type: 'integer',
+                  example: 10,
+                },
+                totalPages: {
+                  type: 'integer',
+                  example: 5,
+                },
+                totalItems: {
+                  type: 'integer',
+                  example: 50,
+                },
+                hasNext: {
+                  type: 'boolean',
+                  example: true,
+                },
+                hasPrev: {
+                  type: 'boolean',
+                  example: false,
+                },
               },
             },
           },

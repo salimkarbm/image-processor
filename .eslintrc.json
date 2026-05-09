@@ -35,13 +35,18 @@
     "import/no-mutable-exports": "off",
     "class-methods-use-this": "off",
     "prefer-destructuring": ["error", { "object": true, "array": false }],
-    "no-unused-vars": ["error", { "argsIgnorePattern": "req|res|next|val" }],
-    "import/extensions": [
+    "no-unused-vars": ["error", { 
+    "argsIgnorePattern": "req|res|next|val",
+     "varsIgnorePattern": "req|res|next|val" 
+     }],
+    "no-shadow": ["error", { "ignoreOnInitialization": true }],
+    "import/no-unresolved": ["error", { "commonjs": true, "amd": true }], "import/extensions": [
       "error",
       "ignorePackages",
       {
         "js": "never",
-        "ts": "never"
+        "ts": "never",
+         "json": "always"
       }
     ],
     "import/no-extraneous-dependencies": [
@@ -50,9 +55,19 @@
         "devDependencies": true,
         "optionalDependencies": false,
         "peerDependencies": false,
+
         "packageDir": "./"
       }
-    ]
+    ],
+    "import/extensions": [
+      "error", // <severity>: "off", "warn", "error"
+      "never", // default for all extensions
+      {
+        "js": "never",   // specific override per extension
+        "ts": "never",
+        "json": "always"
+      }
+    ],
   },
   "settings": {
     "import/resolver": {

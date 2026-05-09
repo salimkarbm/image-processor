@@ -21,3 +21,11 @@ export type PaginatedQuery = {
   to?: any;
   field?: string;
 };
+
+export interface PaginationQuery {
+  page?: string;
+  limit?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  role?: 'user' | 'admin' | 'moderator';
+}

@@ -50,11 +50,14 @@ export default abstract class BaseRepository<T extends BaseEntity> {
       return; // returns undefined (void)
     }
 
-    const filter = { ...where, ...(partialEntity as object) } as
-      | FindOptionsWhere<T>
-      | FindOptionsWhere<T>[];
+    const filter = {
+      ...where,
+      ...(partialEntity as object),
+    } as FindOptionsWhere<T> | FindOptionsWhere<T>[];
 
-    return this.findOne({ where: filter }); // may be T or null
+    return this.findOne({
+      where: filter,
+    }); // may be T or null
   }
 
   async _findPaginated(
@@ -80,7 +83,11 @@ export default abstract class BaseRepository<T extends BaseEntity> {
 
     return {
       data,
-      pagination: { total, pageSize, currentPage },
+      pagination: {
+        total,
+        pageSize,
+        currentPage,
+      },
     };
   }
 
@@ -239,7 +246,11 @@ export default abstract class BaseRepository<T extends BaseEntity> {
 
     return {
       data,
-      pagination: { total, pageSize, currentPage },
+      pagination: {
+        total,
+        pageSize,
+        currentPage,
+      },
     };
   }
 

@@ -36,10 +36,10 @@ export const errorHandler = (
   }
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-  if (ENV_CONFIG.app_env === 'development') {
+  if (ENV_CONFIG.APP.env === 'development') {
     sendErrorDev(err, res);
   }
-  if (ENV_CONFIG.app_env === 'production') {
+  if (ENV_CONFIG.APP.env === 'production') {
     sendErrorProd(err, res);
     const error = { ...err };
     if (error.name === 'ExpiredCodeException') {

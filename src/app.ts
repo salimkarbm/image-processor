@@ -7,12 +7,13 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import rateLimit from 'express-rate-limit';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
-import swaggerOptions from './swagger-jsdoc';
 import AppError from './shared/utils/errors/appError';
 import { errorHandler } from './middlewares/errors/errorMiddleware';
 import router from './routes/v1';
-import { AppDataSource } from './config/db.config';
+import { AppDataSource } from './config/typeorm.config';
 import { ENV_CONFIG } from './config';
+import { specConfig } from './docs/swagger';
+import validateOpenApiSpec from './middlewares/doc/openapi.validation.middleware';
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ dotenv.config();
 const app: Application = express();
 
 async function bootstrap() {
-  const specs: swaggerJsdoc.Options = swaggerOptions;
+  const specs: swaggerJsdoc.Options = specConfig;
 
   // Security middleware
   app.use(
@@ -33,7 +34,11 @@ async function bootstrap() {
           imgSrc: ["'self'", 'data:', 'https:'],
         },
       },
-      hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
     }),
   );
 
@@ -63,12 +68,19 @@ async function bootstrap() {
       retryAfter: '15 minutes',
     },
   });
+
   app.use('/api/', limiter);
 
   app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(
+    express.urlencoded({
+      extended: true,
+      limit: '10mb',
+    }),
+  );
   app.use(compression());
 
+  // Enforce HTTPS in production
   const enforceHTTPS = (req: Request, res: Response, next: NextFunction) => {
     if (
       process.env.NODE_ENV === 'production' &&
@@ -79,6 +91,9 @@ async function bootstrap() {
     next();
   };
   app.use(enforceHTTPS);
+
+  // OpenAPI validation middleware
+  app.use(validateOpenApiSpec);
 
   // Swagger UI setup
   app.use(
@@ -100,12 +115,15 @@ async function bootstrap() {
     }),
   );
 
-  const PORT = ENV_CONFIG.port || 3000;
+  const PORT = ENV_CONFIG.APP.port || 3000;
 
   // Define index route
   app.get('/', async (req: Request, res: Response) => {
     res.contentType('json');
-    res.json({ status: 'ok', message: 'Welcome' });
+    res.json({
+      status: 'ok',
+      message: 'Welcome',
+    });
   });
 
   // Routes
