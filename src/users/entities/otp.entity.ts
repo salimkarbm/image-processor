@@ -14,7 +14,10 @@ export default class OTP extends BaseEntity {
   })
   type!: otpType;
 
-  @Column({ comment: 'The OTP code, stored as a hashed value for security' })
+  @Column({
+    type: 'text',
+    comment: 'The OTP code, stored as a hashed value for security',
+  })
   code!: string;
 
   @Column({ comment: 'The timestamp when the OTP expires' })

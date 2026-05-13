@@ -1,6 +1,6 @@
 /**
  * @openapi
- * /v1/sign-up:
+ * /v1/auth/sign-up:
  *   post:
  *     summary: Sign up for the Image Processor API
  *     description: Registers a new user and sends OTP for verification.
@@ -72,6 +72,38 @@
  *         $ref: '#/components/responses/Conflict'
  *       500:
  *         $ref: '#/components/responses/ServerError'
+ */
+
+/**
+ * @openapi
+ * /v1/auth/verify-email:
+ *   post:
+ *     summary: Verify email with OTP
+ *     description: Verifies a user's email address using a one-time password (OTP) sent to their email.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "john.doe@example.com"
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Email verified successfully.
+ *       400:
+ *         description: Invalid OTP or email.
+ *       404:
+ *         description: User not found.
+ *       500:
+ *         description: Internal server error.
  */
 
 /**

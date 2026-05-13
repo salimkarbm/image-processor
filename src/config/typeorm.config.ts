@@ -15,7 +15,7 @@ export const makeDataSource = (): DataSource => {
     type: 'postgres',
     schema: 'public',
     entities: [User, AuditLog, OTP],
-    migrations: [join(__dirname, '..', '/database/migrations', '*.{ts,js}')],
+    migrations: [join(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
     migrationsTableName: 'migrations',
     migrationsRun: false,
     synchronize: false,
@@ -27,22 +27,23 @@ export const makeDataSource = (): DataSource => {
       ...common,
       type: 'postgres',
       url: process.env.DATABASE_URL,
-      ssl: isProduction, // Tell pg to use SSL
+      ssl:{ rejectUnauthorized: false }, // for neon heroku, otherwise set to isProduction // Tell pg to use SSL
       extra: {
-        ssl: isProduction
-          ? {
-              rejectUnauthorized: true, // This = verify-full
-              // ca: fs.readFileSync('/path/to/ca.pem').toString(), // if you have CA cert
-              // ca: process.env.DATABASE_SSL_CA
-              //   ? Buffer.from(process.env.DATABASE_SSL_CA, 'base64').toString('utf-8')
-              //   : undefined,
-            }
-          : false, // This = disable
+        // ssl: isProduction
+        //   ? {
+        //       rejectUnauthorized: true, // This = verify-full
+        //       // ca: fs.readFileSync('/path/to/ca.pem').toString(), // if you have CA cert
+        //       // ca: process.env.DATABASE_SSL_CA
+        //       //   ? Buffer.from(process.env.DATABASE_SSL_CA, 'base64').toString('utf-8')
+        //       //   : undefined,
+        //     }
+        //   : false, // This = disable
         connectionTimeoutMillis: 30000,
-        // query_timeout: 10000,
-        // statement_timeout: 10000,
         max: 20,
         idleTimeoutMillis: 30000,
+        keepAlive: true,
+        // query_timeout: 10000,
+        // statement_timeout: 10000,
       },
     };
     return new DataSource(options);
@@ -58,15 +59,13 @@ export const makeDataSource = (): DataSource => {
     database: ENV_CONFIG.DATABASE.NAME,
     ssl: isProduction,
     extra: {
-      ssl: isProduction ? { rejectUnauthorized: true } : false,
+       ssl: isProduction ? { rejectUnauthorized: true } : false,
       connectionTimeoutMillis: 30000,
       // query_timeout: 10000,
       // statement_timeout: 10000,
       max: 20,
       idleTimeoutMillis: 30000,
       keepAlive: true,
-      retryAttempts: 10,
-      retryDelay: 5000,
     },
   };
   return new DataSource(options);

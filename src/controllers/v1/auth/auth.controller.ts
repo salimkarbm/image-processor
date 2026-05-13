@@ -21,6 +21,23 @@ export const signUp = async (
   }
 };
 
+export const verifyEmail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const data = await userService.verifyEmail(req);
+    return HttpResponse({
+      response: res,
+      status: STATUS_CODE.OK,
+      message: SUCCESS_MESSAGE.VERIFIED('Email'),
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 export const login = async (req: Request, res: Response) => {
   res.contentType('json');
   res.json({

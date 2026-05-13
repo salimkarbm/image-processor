@@ -1,7 +1,8 @@
 import CryptoJS from 'crypto-js';
 import * as crypto from 'crypto';
 import { ENV_CONFIG } from '../../config';
-
+import { STATUS_CODE } from '../constants';
+import AppError from '../utils/errors/appError';
 export class OTPService {
   private readonly tenMinutesInMs: number = 10 * 60 * 1000;
   private readonly fiveMinutesInMs: number = 5 * 60 * 1000;
@@ -23,24 +24,40 @@ export class OTPService {
       return otp;
     } catch (error) {
       console.error('Error generating OTP:', error);
-      throw new Error('Failed to generate OTP');
+      throw new AppError(
+        'Failed to generate OTP',
+        STATUS_CODE.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   strongHashOtp(otp: string): string {
     try {
       // HMAC uses your secretKey so rainbow tables won't work
-      const hashedOtp = CryptoJS.HmacSHA256(otp, this.secretKey).toString();
-      return hashedOtp;
+      return CryptoJS.HmacSHA256(otp.trim(), this.secretKey.trim()).toString(
+        CryptoJS.enc.Hex,
+      );
     } catch (error) {
       console.error('Error hashing OTP:', error);
-      throw new Error('Failed to hash OTP');
+      throw new AppError(
+        'Failed to hash OTP',
+        STATUS_CODE.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
   verifyStrongHashedOtp(plainOtp: string, hashedOtp: string): boolean {
-    const hash = CryptoJS.HmacSHA256(plainOtp, this.secretKey).toString();
-    return hash === hashedOtp;
+    try {
+      const computedHash = CryptoJS.HmacSHA256(
+        plainOtp.trim(),
+        this.secretKey.trim(),
+      ).toString(CryptoJS.enc.Hex);
+
+      return computedHash === hashedOtp.trim();
+    } catch (error) {
+      console.error('Error verifying hashed OTP:', error);
+      return false;
+    }
   }
 
   weakHashOtp(otp: string): string {
@@ -49,7 +66,10 @@ export class OTPService {
       return hashedOtp;
     } catch (error) {
       console.error('Error hashing OTP:', error);
-      throw new Error('Failed to hash OTP');
+      throw new AppError(
+        'Failed to hash OTP',
+        STATUS_CODE.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -79,7 +99,10 @@ export class OTPService {
       return encryptedData;
     } catch (error) {
       console.error('Error encrypting OTP:', error);
-      throw new Error('Failed to encrypt OTP');
+      throw new AppError(
+        'Failed to encrypt OTP',
+        STATUS_CODE.INTERNAL_SERVER_ERROR,
+      );
     }
   }
 
@@ -114,13 +137,14 @@ export class OTPService {
     }
   }
 
-  isOtpExpired(timestamp: number): boolean {
-    const currentTime = new Date().getTime();
-    const isExpired = currentTime - timestamp > this.otpExpiry;
+  isOtpExpired(expirationTime: Date): boolean {
+    const currentTime = new Date();
+    const isExpired =
+      new Date(expirationTime).getTime() < currentTime.getTime();
     if (isExpired) {
-      console.debug('OTP is expired');
+      return true;
     }
-    return isExpired;
+    return false;
   }
 
   calculateOtpExpiration(expirationTimeInMinutes: number = 10): Date {

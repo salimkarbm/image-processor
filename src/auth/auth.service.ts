@@ -20,7 +20,7 @@ export class UserService {
   private createOtp = async (
     identifier: string,
     type: otpType,
-  ): Promise<OTP> => {
+  ): Promise<string> => {
     const otpCode = otpService.generateOTP();
     const hashedOtp = otpService.strongHashOtp(otpCode);
     const otp = otpRepo.create({
@@ -30,18 +30,18 @@ export class UserService {
       expiredAt: otpService.calculateOtpExpiration(ENV_CONFIG.OTP.EXPIRY_TIME),
     });
     await otpRepo.save(otp);
-    return otp;
+    return otpCode;
   };
 
   private sendVerificationEmail = async (
     user: User,
-    otp: OTP,
+    otp: string,
     message: any,
   ) => {
     try {
       const sendEmail = await emailService.signupOtpEmail(
         message,
-        parseInt(otp.code, 10),
+        parseInt(otp, 10),
         user.firstName,
       );
       // retry ONLY if sending failed
@@ -61,7 +61,7 @@ export class UserService {
         id: user.id,
       });
 
-       await otpRepo.delete({
+      await otpRepo.delete({
         identifier: user.email,
       });
 
@@ -93,8 +93,42 @@ export class UserService {
       subject: 'Welcome to Image Processor API',
       from: ENV_CONFIG.MAILER.FROM,
     };
-
+    //TODO: move this to a background job to avoid blocking the main thread, and implement retry logic for email sending, if email sending fails, delete the user and otp record to maintain data integrity
     await this.sendVerificationEmail(user, otp, message);
     return user;
-}
+  };
+
+  verifyEmail = async (req: Request): Promise<void> => {
+    const { email, otp } = req.body;
+    const otpRecord = await otpRepo.findOne({
+      where: {
+        identifier: email,
+        type: otpType.email,
+      },
+    });
+    if (!otpRecord) {
+      throw new AppError('OTP not found for this email', STATUS_CODE.NOT_FOUND);
+    }
+    if (otpService.isOtpExpired(otpRecord.expiredAt)) {
+      throw new AppError('OTP has expired', STATUS_CODE.BAD_REQUEST);
+    }
+    const isValidOtp = otpService.verifyStrongHashedOtp(otp, otpRecord.code);
+    if (!isValidOtp) {
+      throw new AppError('Invalid OTP code', STATUS_CODE.BAD_REQUEST);
+    }
+    const user = await userRepo.findOne({
+      where: { email },
+    });
+    if (!user) {
+      throw new AppError(
+        'User not found for this email',
+        STATUS_CODE.NOT_FOUND,
+      );
+    }
+    user.isVerified = true;
+    await userRepo.save(user);
+    await otpRepo.delete({
+      id: otpRecord.id,
+    });
+  };
 }
