@@ -1,11 +1,12 @@
 {
   "name": "starter",
   "version": "1.0.0",
-  "description": "project starter",
+  "description": "Image Processor API",
   "main": "dist/app.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/app.js",
+    "worker": "ts-node -r tsconfig-paths/register src/shared/services/worker.service.ts",
     "postinstall": "tsc",
     "watch": "nodemon --exec  ts-node src/app.ts",
     "lint": "eslint --ext .ts . --fix",

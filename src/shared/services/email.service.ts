@@ -109,27 +109,31 @@ export class EmailService {
     return false; // Explicit failure
   }
 
-  async signupOtpEmail(
-    message: EmailMessageOptions,
-    options: SendEmailOptions,
-  ): Promise<nodemailer.SentMessageInfo> {
-    const template: string = SignupOtpTemplate({
-      firstName: options.firstName as string,
-      otp: options?.otp?.toString() as string,
+  signupEmailTemplate(otp: string, firstName: string): string {
+    return SignupOtpTemplate({
+      firstName,
+      otp,
       expiryMinutes: ENVIRONMENT.OTP.EXPIRY_TIME_IN_MINUTES,
       appName: ENVIRONMENT.APP.name,
       appTagline: ENVIRONMENT.APP.tagline,
       teamName: ENVIRONMENT.APP.teamName,
     });
+  }
+
+  async signupOTPEmail(
+    message: EmailMessageOptions,
+    options: SendEmailOptions,
+  ): Promise<nodemailer.SentMessageInfo> {
+    const template: string = this.signupEmailTemplate(
+      options.otp as string,
+      options.firstName as string,
+    );
     return await this.sendEmail(message, template);
   }
 
-  async sendWelcomeEmail(
-    message: EmailMessageOptions,
-    option: SendEmailOptions,
-  ): Promise<nodemailer.SentMessageInfo> {
-    const template: string = WelcomeEmailTemplate({
-      firstName: option.firstName as string,
+  welcomeEmailTemplate(firstName: string): string {
+    return WelcomeEmailTemplate({
+      firstName,
       appName: ENVIRONMENT.APP.name,
       appTagline: ENVIRONMENT.APP.tagline,
       teamName: ENVIRONMENT.APP.teamName,
@@ -138,16 +142,12 @@ export class EmailService {
       companyAddress: ENVIRONMENT.APP.companyAddress,
       unsubscribeUrl: ENVIRONMENT.APP.unsubscribeUrl,
     });
-    return await this.sendEmail(message, template);
   }
 
-  async sendResetPasswordEmail(
-    message: EmailMessageOptions,
-    options: SendEmailOptions,
-  ): Promise<nodemailer.SentMessageInfo> {
-    const template: string = ResetPasswordEmailTemplate({
-      firstName: options.firstName as string,
-      otp: options?.otp?.toString() as string,
+  resetPasswordEmailTemplate(otp: string, firstName: string): string {
+    return ResetPasswordEmailTemplate({
+      firstName,
+      otp,
       expiryMinutes: ENVIRONMENT.OTP.EXPIRY_TIME_IN_MINUTES,
       appName: ENVIRONMENT.APP.name,
       appTagline: ENVIRONMENT.APP.tagline,
@@ -156,6 +156,26 @@ export class EmailService {
       companyAddress: ENVIRONMENT.APP.companyAddress,
       resetPasswordUrl: ENVIRONMENT.APP.resetPasswordUrl,
     });
+  }
+
+  async sendWelcomeEmail(
+    message: EmailMessageOptions,
+    option: SendEmailOptions,
+  ): Promise<nodemailer.SentMessageInfo> {
+    const template: string = this.welcomeEmailTemplate(
+      option.firstName as string,
+    );
+    return await this.sendEmail(message, template);
+  }
+
+  async sendResetPasswordEmail(
+    message: EmailMessageOptions,
+    options: SendEmailOptions,
+  ): Promise<nodemailer.SentMessageInfo> {
+    const template: string = this.resetPasswordEmailTemplate(
+      options.otp as string,
+      options.firstName as string,
+    );
     return await this.sendEmail(message, template);
   }
 }

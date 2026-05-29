@@ -16,7 +16,7 @@ import { AppDataSource } from './config/typeorm.config';
 import { ENVIRONMENT } from './config';
 import { specConfig } from './docs/v1/swagger';
 import validateOpenApiSpec from './middlewares/doc/openapi.validation.middleware';
-import redisService from './shared/services/redis.service';
+import redisService from './shared/services/Redis/queue-redis.service';
 import { getSecurityHeaders, getSwaggerOptions } from './shared/utils';
 
 dotenv.config();
@@ -118,10 +118,10 @@ async function bootstrap() {
   });
   app.use(errorHandler);
 
+  await redisService.connect();
   // Listen for server
   AppDataSource.initialize()
     .then(async () => {
-      await redisService.ping();
       app.listen(PORT, () => {
         console.log(
           `

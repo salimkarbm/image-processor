@@ -1,28 +1,30 @@
 import Redis from 'ioredis';
-import { ENVIRONMENT } from '../../config';
+import { ENVIRONMENT } from '../../../config';
 
-class RedisService {
+class CacheRedisService {
   public redis: Redis;
 
   constructor() {
-    this.redis = new Redis(ENVIRONMENT.REDIS.URL, {
+    this.redis = new Redis(ENVIRONMENT.REDIS.cache_url, {
       maxRetriesPerRequest: null,
-      tls: ENVIRONMENT.REDIS.URL.startsWith('rediss://') ? {} : undefined,
+      tls: ENVIRONMENT.REDIS.cache_url.startsWith('rediss://') ? {} : undefined,
       enableReadyCheck: true,
+      lazyConnect: true, // connect manually so we control logging
+      enableOfflineQueue: false,
       retryStrategy: (times) => {
         if (times > 10) {
           console.error('[Redis] Too many reconnection attempts — giving up.');
           return null; // stop retrying
         }
-        const delay = Math.min(times * 200, 3_000);
-        console.warn(`[Redis] Reconnecting in ${delay}ms (attempt ${times})…`);
+        const delay = Math.min(times * 200, 3000);
+        console.warn(
+          `[Redis] Reconnecting in ${delay}ms (attempt ${times}) ...`,
+        );
         return delay;
       },
-      lazyConnect: true, // connect manually so we control logging
     });
     this.registerEventHandlers();
     this.setupGracefulShutdown();
-    this.redis.connect();
   }
 
   private registerEventHandlers() {
@@ -41,36 +43,68 @@ class RedisService {
   private setupGracefulShutdown() {
     const shutdown = async (signal: string) => {
       console.log(`\n${signal} received. Closing Redis...`);
-      await this.redis.quit();
+
+      try {
+        if (this.redis.status !== 'end') {
+          await this.redis.quit();
+        }
+      } catch (error) {
+        console.error('Redis shutdown error:', error);
+      }
+
       process.exit(0);
     };
 
     process.on('SIGINT', () => shutdown('SIGINT'));
     process.on('SIGTERM', () => shutdown('SIGTERM')); // Render uses this
-    process.on('exit', () => this.redis.disconnect());
+    // process.on('exit', () => this.redis.disconnect());
+  }
+
+  public async connect(): Promise<void> {
+    try {
+      await this.redis.connect();
+
+      console.log('✅ Redis initial connection successful');
+
+      await this.redis.ping();
+
+      console.log('🏓 Redis ping successful');
+    } catch (error) {
+      console.error('❌ Failed to connect to Redis:', error);
+    }
   }
 
   public getInstance() {
     return this.redis;
   }
 
-  public async set(value: string, prefix: string, key?: string): Promise<void> {
-    await this.redis.set(`${prefix}:${key}`, value);
+  public async set(
+    prefix: string,
+    value: string,
+    key?: string,
+  ): Promise<string | null> {
+    try {
+      return await this.redis.set(`${prefix}:${key}`, value);
+    } catch (error) {
+      console.error('Redis GET failed:', error);
+      return null;
+    }
   }
 
-  public async get(
-    prefix: string,
-    key?: string,
-  ): Promise<string | null | undefined> {
-    const get = await this.redis.get(`${prefix}:${key}`);
-    return get;
+  public async get(prefix: string, key?: string): Promise<string | null> {
+    try {
+      return await this.redis.get(`${prefix}:${key}`);
+    } catch (error) {
+      console.error('Redis GET failed:', error);
+      return null;
+    }
   }
 
   public async del(prefix: string, key: string): Promise<void> {
     try {
       await this.redis.del(`${prefix}:${key}`);
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.error('Redis DELETE failed:', error);
     }
   }
 
@@ -176,5 +210,6 @@ class RedisService {
   }
 }
 
-const redisService = new RedisService();
-export default redisService;
+const cacheRedisService = new CacheRedisService();
+
+export default cacheRedisService;

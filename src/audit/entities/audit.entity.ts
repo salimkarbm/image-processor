@@ -1,20 +1,10 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
 import User from '../../users/entities/user.entity';
 import { AuditAction, AuditModule } from '../../shared/enums/index';
 import BaseEntity from '../../repositories/base.entity';
 
 @Entity({ name: 'audit_logs', schema: 'public' })
 export class AuditLog extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
-
   @Column({ type: 'uuid' })
   userId!: string;
 
@@ -51,7 +41,4 @@ export class AuditLog extends BaseEntity {
 
   @Column({ nullable: true })
   userAgent!: string;
-
-  @CreateDateColumn()
-  createdAt!: Date;
 }

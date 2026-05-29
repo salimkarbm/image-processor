@@ -13,12 +13,10 @@
  */
 
 import { Worker, MetricsTime } from 'bullmq';
-import { JOB_TYPES, JobType } from './queue.service.js';
-import redisService from './redis.service';
-import emailService from './email.service.js';
-
-const QUEUE_NAME = process.env.QUEUE_NAME ?? 'default';
-const CONCURRENCY = Number(process.env.WORKER_CONCURRENCY ?? 5);
+import redisService from './Redis/queue-redis.service';
+import emailService from './email.service';
+import { ENVIRONMENT } from 'src/config';
+import { JOB_TYPES, JobType } from './queue.service';
 
 // ─── Job handlers ────────────────
 
@@ -30,13 +28,13 @@ const handlers = {
     await job.updateProgress(10);
 
     // Simulate email sending (replace with your mailer, e.g. Nodemailer, SES)
-    // await simulateWork(500);
-    //await emailService.sendEmail({ to, subject, body }, template);
+    await emailService.sendEmail({ to, subject }, body);
+
     await job.updateProgress(80);
 
     // Simulate transient failure to demo retries (remove in production)
-    if (Math.random() < 0.1)
-      throw new Error('SMTP connection refused — will retry');
+    // if (Math.random() < 0.1)
+    //   throw new Error('SMTP connection refused — will retry');
 
     await job.updateProgress(100);
     await job.log(`Email delivered to ${to}`);
@@ -71,7 +69,7 @@ const handlers = {
       await job.log(`Processed chunk ${i + 1}/${CHUNKS}`);
     }
 
-    return { filePath, rowsProcessed: 5_000, status: 'success' };
+    return { filePath, rowsProcessed: 5000, status: 'success' };
   },
 
   async [JOB_TYPES.GENERATE_REPORT](job: any) {
@@ -185,13 +183,13 @@ function createWorker(queueName: string) {
     },
     {
       connection: redisService.getInstance(),
-      concurrency: CONCURRENCY,
+      concurrency: ENVIRONMENT.WORKER.CONCURRENCY,
 
       // Collect metrics for the last hour (accessible via queue.getMetrics())
       metrics: { maxDataPoints: MetricsTime.ONE_HOUR * 2 },
 
       // Stalled job detection — re-queue jobs where the worker crashed
-      stalledInterval: 30_000,
+      stalledInterval: 30000,
       maxStalledCount: 2,
     },
   );
@@ -226,9 +224,10 @@ function createWorker(queueName: string) {
 
 // ─── Bootstrap ─────────────────────
 
-const worker = createWorker(QUEUE_NAME);
+const worker = createWorker(ENVIRONMENT.QUEUE.QUEUE_NAME);
+
 console.log(
-  `[Worker] Listening on queue "${QUEUE_NAME}" (concurrency: ${CONCURRENCY})`,
+  `[Worker] Listening on queue "${ENVIRONMENT.QUEUE.QUEUE_NAME}" (concurrency: ${ENVIRONMENT.WORKER.CONCURRENCY})`,
 );
 
 // ─── Graceful shutdown ───────────────────

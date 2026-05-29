@@ -14,8 +14,9 @@ import Session from '../users/entities/session.entity';
 import sessionRepo from '../repositories/user/session.repository';
 import { addMinutes, addSeconds, differenceInMinutes } from 'date-fns';
 import { CreateSession } from '../shared/types/users/session.type';
-import { IsNull, MoreThan } from 'typeorm';
+import { IsNull } from 'typeorm';
 import { EmailMessageOptions } from '../shared/types';
+import { JOB_TYPES, queueService } from '../shared/services/queue.service';
 
 export class AuthService {
   private readonly RESET_TOKEN_VALIDITY_MINUTES = 60;
@@ -114,7 +115,7 @@ export class AuthService {
     if (!user) return null;
     return user;
   }
-  
+
   signUp = async (req: Request): Promise<User> => {
     const userExist = await userRepo.findOne({
       where: [{ email: req.body.email }, { username: req.body.username }],
@@ -138,12 +139,13 @@ export class AuthService {
       to: user.email,
       subject: 'Welcome to Image Processor API',
       from: ENVIRONMENT.MAILER.FROM,
+      body: emailService.signupEmailTemplate(otp, user.firstName),
     };
-    //TODO: move this to a background job to avoid blocking the main thread, and implement retry logic for email sending, if email sending fails, delete the user and otp record to maintain data integrity
-    await emailService.signupOtpEmail(message, {
-      otp,
-      firstName: user.firstName,
-    });
+    await queueService.addJob(
+      ENVIRONMENT.QUEUE.QUEUE_NAME,
+      JOB_TYPES.SEND_EMAIL,
+      message,
+    );
     return user;
   };
 
@@ -154,6 +156,9 @@ export class AuthService {
         identifier: email,
         type: OTP_TYPE.EMAIL_VERIFICATION,
         isUsed: false,
+      },
+      order: {
+        createdAt: 'DESC',
       },
     });
     if (!otpRecord) {
@@ -206,11 +211,13 @@ export class AuthService {
         to: user.email,
         subject: 'Welcome to Image Processor API',
         from: ENVIRONMENT.MAILER.FROM,
+        body: emailService.welcomeEmailTemplate(user.firstName),
       };
-      //TODO: move this to a background job to avoid blocking the main thread, and implement retry logic for email sending, if email sending fails, delete the user and otp record to maintain data integrity
-      await emailService.sendWelcomeEmail(message, {
-        firstName: user.firstName,
-      });
+      await queueService.addJob(
+        ENVIRONMENT.QUEUE.QUEUE_NAME,
+        JOB_TYPES.SEND_EMAIL,
+        message,
+      );
       return;
     }
     // Increment failed OTP attempts
@@ -230,7 +237,7 @@ export class AuthService {
   resendOTP = async (req: Request): Promise<void> => {
     const { email } = req.body;
 
-    const otp = await otpRepo.findOne({
+    const latestOtp = await otpRepo.findOne({
       where: {
         identifier: email,
         type: OTP_TYPE.EMAIL_VERIFICATION,
@@ -239,22 +246,25 @@ export class AuthService {
       order: { createdAt: 'DESC' },
     });
 
-    if (!otp) {
+    if (!latestOtp) {
       // Generate new OTP
       const otpCode = await this.createOtp(email, OTP_TYPE.EMAIL_VERIFICATION);
       const message = {
         to: email,
         subject: 'Your OTP Code for Email Verification',
         from: ENVIRONMENT.MAILER.FROM,
+        body: emailService.signupEmailTemplate(otpCode, email),
       };
-      return await emailService.signupOtpEmail(message, {
-        otp: otpCode,
-        firstName: email,
-      });
+      await queueService.addJob(
+        ENVIRONMENT.QUEUE.QUEUE_NAME,
+        JOB_TYPES.SEND_EMAIL,
+        message,
+      );
+      return;
     }
 
     // Check coolDown
-    const secondsLeft = otpService.checkCoolDown(otp.nextResendAt);
+    const secondsLeft = otpService.checkCoolDown(latestOtp.nextResendAt);
     if (secondsLeft !== null) {
       throw new AppError(
         `Please wait ${secondsLeft} seconds before requesting again.`,
@@ -263,34 +273,50 @@ export class AuthService {
     }
 
     // Check max resend
-    if (otpService.checkMaxResendAttempts(otp.resendCount)) {
+    if (otpService.checkMaxResendAttempts(latestOtp.resendCount)) {
       throw new AppError(
         'Maximum resend attempts reached. Please request a new OTP after 24 hours.',
         STATUS_CODE.BAD_REQUEST,
       );
     }
 
+    // Invalidate ALL unused OTPs for this email/type
+    await otpRepo.update(
+      {
+        identifier: email,
+        type: OTP_TYPE.EMAIL_VERIFICATION,
+        isUsed: false,
+      },
+      {
+        isUsed: true, // mark them as used so they can't be verified
+        expiredAt: new Date(), // expire immediately
+      },
+    );
+
     // Generate new OTP
-    const coolDown = otpService.coolDownSeconds(otp.resendCount);
+    const coolDown = otpService.coolDownSeconds(latestOtp.resendCount);
     const otpCode = await this.createOtp(email, OTP_TYPE.EMAIL_VERIFICATION);
-    otp.expiredAt = otpService.expiryTime(); // 10 mins
-    otp.resendCount = otp.resendCount + 1;
-    otp.nextResendAt = new Date(Date.now() + coolDown * 1000);
+    latestOtp.expiredAt = otpService.expiryTime(); // 10 mins
+    latestOtp.resendCount = latestOtp.resendCount + 1;
+    latestOtp.nextResendAt = new Date(Date.now() + coolDown * 1000);
 
     //TODO:
     /*
     1. Rate limit the endpoint itself as a first line of defence before even hitting the service logic — this stops bots from hammering the endpoint at the network level.
     */
-    await otpRepo.save(otp);
+    await otpRepo.save(latestOtp);
     const message = {
       to: req.body.email,
       subject: 'Your OTP Code for Email Verification',
       from: ENVIRONMENT.MAILER.FROM,
+      body: emailService.signupEmailTemplate(otpCode, req.body.email),
     };
-    return await emailService.signupOtpEmail(message, {
-      otp: otpCode,
-      firstName: req.body.email,
-    });
+    await queueService.addJob(
+      ENVIRONMENT.QUEUE.QUEUE_NAME,
+      JOB_TYPES.SEND_EMAIL,
+      message,
+    );
+    return;
   };
 
   private async createSession(session: CreateSession): Promise<Session> {
@@ -396,11 +422,16 @@ export class AuthService {
         to: validUser?.email,
         subject: 'Welcome to Image Processor API',
         from: ENVIRONMENT?.MAILER.FROM,
+        body: emailService.signupEmailTemplate(
+          otp,
+          validUser.firstName as string,
+        ),
       };
-      await emailService.signupOtpEmail(message as EmailMessageOptions, {
-        otp,
-        firstName: validUser.firstName as string,
-      });
+      await queueService.addJob(
+        ENVIRONMENT.QUEUE.QUEUE_NAME,
+        JOB_TYPES.SEND_EMAIL,
+        message,
+      );
       return {
         message: 'Please check your email to verify your account',
         user: {
@@ -412,6 +443,26 @@ export class AuthService {
         },
       };
     }
+
+    // Check concurrent sessions
+    const userSessions = await sessionRepo.findAll({
+      where: { userId: validUser.id },
+      order: { lastSeenAt: 'ASC' },
+    });
+
+    if (userSessions.length >= this.MAX_CONCURRENT_SESSIONS) {
+      const oldestSession = userSessions[0];
+
+      // Kill the oldest session
+      await sessionRepo.update(
+        { id: oldestSession.id },
+        { expiresAt: new Date() }, // Expire it now
+      );
+
+      // OR delete it
+      // await sessionRepo.delete({ id: oldestSession.id });
+    }
+
     const token = await jwtService.generateToken({ id: validUser.id });
     const refresh = await jwtService.generateToken(
       { sub: validUser.id },
@@ -553,20 +604,26 @@ export class AuthService {
           isUsed: false,
         },
       });
-      const message = {
-        to: req.body.email,
-        subject: 'Your OTP for password reset',
-        from: ENVIRONMENT.MAILER.FROM,
-      };
+
       if (!otpRecord) {
         const otpCode = await this.createOtp(
           email,
           OTP_TYPE.PASSWORD_RESET_REQUEST,
         );
-        await emailService.sendResetPasswordEmail(message, {
-          otp: otpCode,
-          firstName: user.firstName,
-        });
+        const message = {
+          to: req.body.email,
+          subject: 'Your OTP for password reset',
+          from: ENVIRONMENT.MAILER.FROM,
+          body: emailService.resetPasswordEmailTemplate(
+            otpCode,
+            user.firstName,
+          ),
+        };
+        await queueService.addJob(
+          ENVIRONMENT.QUEUE.QUEUE_NAME,
+          JOB_TYPES.SEND_EMAIL,
+          message,
+        );
         return user;
       }
       // Check coolDown
@@ -601,10 +658,18 @@ export class AuthService {
     1. Rate limit the endpoint itself as a first line of defence before even hitting the service logic — this stops bots from hammering the endpoint at the network level.
     */
       await otpRepo.save(otpRecord);
-      return await emailService.sendResetPasswordEmail(message, {
-        otp: otpCode,
-        firstName: user.firstName,
-      });
+      const message = {
+        to: req.body.email,
+        subject: 'Your OTP for password reset',
+        from: ENVIRONMENT.MAILER.FROM,
+        body: emailService.resetPasswordEmailTemplate(otpCode, user.firstName),
+      };
+      await queueService.addJob(
+        ENVIRONMENT.QUEUE.QUEUE_NAME,
+        JOB_TYPES.SEND_EMAIL,
+        message,
+      );
+      return user;
     }
     return null;
   };

@@ -11,9 +11,6 @@ import * as bcrypt from 'bcrypt';
 
 @Entity({ name: 'session', schema: 'public' })
 export default class Session extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
-
   @Column({ type: 'uuid' })
   userId!: string;
 
@@ -37,9 +34,6 @@ export default class Session extends BaseEntity {
 
   @Column({ type: 'timestamptz' })
   lastSeenAt!: Date;
-
-  @CreateDateColumn()
-  createdAt!: Date;
 
   @BeforeInsert()
   @BeforeUpdate()

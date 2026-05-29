@@ -1,12 +1,14 @@
 /**
- * QueueService — production-grade BullMQ wrapper
+ * Queue service
  *
  * Handles: job creation, deduplication, retries, priorities,
  * delayed jobs, bulk adds, progress tracking, and graceful shutdown.
  */
 
 import { Job, JobsOptions, Queue, QueueEvents } from 'bullmq';
-import redisService from './redis.service';
+import redisService from './Redis/queue-redis.service';
+import AppError from '../utils/errors/appError';
+import { STATUS_CODE } from '../constants';
 
 type JobOpts = {
   attempts: number;
@@ -14,8 +16,9 @@ type JobOpts = {
   removeOnComplete: { count: number } | { age: number };
   removeOnFail: { count: number } | { age: number };
 };
+
 export type JobType = (typeof JOB_TYPES)[keyof typeof JOB_TYPES];
-// ─── Job type registry ─────────────────────────
+// ─── Job type registry ──────────────────────────────────────────────────────────
 // Central place to define all job types and their default options.
 // Add a new entry here whenever you introduce a new job kind.
 
@@ -96,40 +99,80 @@ const JOB_DEFAULTS: Record<JobType, JobOpts> = {
   },
 } as const;
 
-// ─── Validation ──────────────────────────────────
+// ─── Validation ──────────────────
 
-// const PAYLOAD_VALIDATORS = {
-//   [JOB_TYPES.SEND_EMAIL]: (p) => {
-//     if (!p.to) throw new Error("send_email: 'to' is required");
-//     if (!p.subject) throw new Error("send_email: 'subject' is required");
-//     if (!p.body && !p.templateId)
-//       throw new Error("send_email: 'body' or 'templateId' is required");
-//   },
-//   [JOB_TYPES.PROCESS_CSV]: (p) => {
-//     if (!p.filePath) throw new Error("process_csv: 'filePath' is required");
-//   },
-//   [JOB_TYPES.GENERATE_REPORT]: (p) => {
-//     if (!p.reportType)
-//       throw new Error("generate_report: 'reportType' is required");
-//   },
-//   [JOB_TYPES.RESIZE_IMAGE]: (p) => {
-//     if (!p.imageUrl) throw new Error("resize_image: 'imageUrl' is required");
-//     if (!p.width && !p.height)
-//       throw new Error("resize_image: 'width' or 'height' is required");
-//   },
-//   [JOB_TYPES.PUSH_NOTIFICATION]: (p) => {
-//     if (!p.userId) throw new Error("push_notification: 'userId' is required");
-//     if (!p.message) throw new Error("push_notification: 'message' is required");
-//   },
-//   [JOB_TYPES.WEBHOOK]: (p) => {
-//     if (!p.url) throw new Error("webhook: 'url' is required");
-//   },
-// };
+const PAYLOAD_VALIDATORS = {
+  [JOB_TYPES.SEND_EMAIL]: (p: {
+    to: string;
+    subject: string;
+    body: string;
+    templateId?: string;
+  }) => {
+    if (!p.to)
+      throw new AppError(
+        "send_email: 'to' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+    if (!p.subject)
+      throw new AppError(
+        "send_email: 'subject' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+    if (!p.body && !p.templateId)
+      throw new AppError(
+        "send_email: 'body' or 'templateId' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+  },
+  [JOB_TYPES.PROCESS_CSV]: (p: any) => {
+    if (!p.filePath)
+      throw new AppError(
+        "process_csv: 'filePath' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+  },
+  [JOB_TYPES.GENERATE_REPORT]: (p: any) => {
+    if (!p.reportType)
+      throw new AppError(
+        "generate_report: 'reportType' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+  },
+  [JOB_TYPES.RESIZE_IMAGE]: (p: any) => {
+    if (!p.imageUrl)
+      throw new AppError(
+        "resize_image: 'imageUrl' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+    if (!p.width && !p.height)
+      throw new AppError(
+        "resize_image: 'width' or 'height' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+  },
+  [JOB_TYPES.PUSH_NOTIFICATION]: (p: any) => {
+    if (!p.userId)
+      throw new AppError(
+        "push_notification: 'userId' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+    if (!p.message)
+      throw new AppError(
+        "push_notification: 'message' is required",
+        STATUS_CODE.BAD_REQUEST,
+      );
+  },
+  [JOB_TYPES.WEBHOOK]: (p: any) => {
+    if (!p.url)
+      throw new AppError("webhook: 'url' is required", STATUS_CODE.BAD_REQUEST);
+  },
+};
 
-// function validatePayload(jobType, payload) {
-//   const validator = PAYLOAD_VALIDATORS[jobType];
-//   if (validator) validator(payload);
-// }
+function validatePayload(jobType: JobType, payload: object) {
+  const validator =
+    PAYLOAD_VALIDATORS[jobType as keyof typeof PAYLOAD_VALIDATORS];
+  if (validator) validator(payload as any);
+}
 
 export class QueueService {
   private queues: Map<string, Queue> = new Map();
@@ -142,7 +185,7 @@ export class QueueService {
     this.connection = redisService.getInstance();
   }
 
-  // ── Internal helpers ────────────────────────────────
+  // ── Internal helpers ───────────────────
 
   /**
    * Lazily create and cache a Queue for the given name.
@@ -181,23 +224,34 @@ export class QueueService {
     return this.queueEvents.get(queueName);
   }
 
-  // ── Public API ───────────────────────────────
+  // ── Public API ─────────────────
 
   /**
    * Add a single job.
    */
   async addJob(
     queueName: string,
-    jobType: string,
+    jobType: JobType,
     payload: object,
     options: JobsOptions = {},
   ): Promise<Job> {
-    // if (!queueName) throw new Error('addJob: queueName is required');
-    // if (!jobType) throw new Error('addJob: jobType is required');
-    // if (!payload || typeof payload !== 'object')
-    //   throw new Error('addJob: payload must be an object');
+    if (!queueName)
+      throw new AppError(
+        'addJob: queueName is required',
+        STATUS_CODE.BAD_REQUEST,
+      );
+    if (!jobType)
+      throw new AppError(
+        'addJob: jobType is required',
+        STATUS_CODE.BAD_REQUEST,
+      );
+    if (!payload && typeof payload !== 'object')
+      throw new AppError(
+        'addJob: payload must be an object',
+        STATUS_CODE.BAD_REQUEST,
+      );
 
-    // validatePayload(jobType, payload);
+    validatePayload(jobType, payload);
 
     const queue = this.getQueue(queueName);
     if (!queue) {
@@ -219,13 +273,16 @@ export class QueueService {
    */
   async addDelayedJob(
     queueName: string,
-    jobType: string,
+    jobType: JobType,
     payload: object,
     delayMs: number, // - Milliseconds to wait before processing.
     options: object = {},
   ) {
     if (typeof delayMs !== 'number' || delayMs < 0)
-      throw new Error('addDelayedJob: delayMs must be a non-negative number');
+      throw new AppError(
+        'addDelayedJob: delayMs must be a non-negative number',
+        STATUS_CODE.BAD_REQUEST,
+      );
 
     return this.addJob(queueName, jobType, payload, {
       delay: delayMs,
@@ -238,7 +295,7 @@ export class QueueService {
    */
   async addRecurringJob(
     queueName: string,
-    jobType: string,
+    jobType: JobType,
     payload: object,
     cronExpression: string, // - e.g. "0 * * * *" (every hour)
     options: object = {},
@@ -258,7 +315,7 @@ export class QueueService {
    */
   async addUniqueJob(
     queueName: string,
-    jobType: string,
+    jobType: JobType,
     payload: object,
     dedupeId: string,
     options: object = {},
@@ -301,7 +358,10 @@ export class QueueService {
 
     const queue = this.getQueue(queueName);
     if (!queue) {
-      throw new Error(`Queue "${queueName}" not found`);
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     }
     const bulkData = jobs.map(({ jobType, payload, options = {} }) => ({
       name: jobType,
@@ -322,7 +382,7 @@ export class QueueService {
    */
   async addPriorityJob(
     queueName: string,
-    jobType: string,
+    jobType: JobType,
     payload: object,
     priority: number = 1,
     options: object = {},
@@ -340,7 +400,11 @@ export class QueueService {
     timeoutMs = 30_000,
   ): Promise<any> {
     const queueEvents = this.getQueueEvents(queueName);
-    if (!queueEvents) throw new Error(`Queue "${queueName}" not found`);
+    if (!queueEvents)
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     return job.waitUntilFinished(queueEvents, timeoutMs);
   }
 
@@ -349,7 +413,11 @@ export class QueueService {
    */
   async getQueueStats(queueName: string) {
     const queue = this.getQueue(queueName);
-    if (!queue) throw new Error(`Queue "${queueName}" not found`);
+    if (!queue)
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
 
     const [waiting, active, completed, failed, delayed, pausedState] =
       await Promise.all([
@@ -381,7 +449,11 @@ export class QueueService {
    */
   async retryFailedJobs(queueName: string): Promise<number> {
     const queue = this.getQueue(queueName);
-    if (!queue) throw new Error(`Queue "${queueName}" not found`);
+    if (!queue)
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     const failed = await queue.getFailed();
     await Promise.all(failed.map((j) => j.retry()));
     console.log(
@@ -395,13 +467,24 @@ export class QueueService {
    */
   async removeJob(queueName: string, jobId: string) {
     const queue = this.getQueue(queueName);
-    if (!queue) throw new Error(`Queue "${queueName}" not found`);
+    if (!queue)
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     const job = await queue.getJob(jobId);
-    if (!job) throw new Error(`removeJob: job "${jobId}" not found`);
+    if (!job)
+      throw new AppError(
+        `removeJob: job "${jobId}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
 
     const state = await job.getState();
     if (state === 'active')
-      throw new Error(`removeJob: cannot remove active job "${jobId}"`);
+      throw new AppError(
+        `removeJob: cannot remove active job "${jobId}"`,
+        STATUS_CODE.BAD_REQUEST,
+      );
 
     await job.remove();
     console.log(`[QueueService] 🗑 Removed job "${jobId}" from "${queueName}"`);
@@ -413,7 +496,10 @@ export class QueueService {
   async pauseQueue(queueName: string): Promise<void> {
     const queue = this.getQueue(queueName);
     if (!queue) {
-      throw new Error(`Queue "${queueName}" not found`);
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     }
 
     await queue.pause();
@@ -426,7 +512,10 @@ export class QueueService {
   async resumeQueue(queueName: string) {
     const queue = this.getQueue(queueName);
     if (!queue) {
-      throw new Error(`Queue "${queueName}" not found`);
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     }
     await queue.resume();
     console.log(`[QueueService] ▶ Resumed queue "${queueName}"`);
@@ -438,7 +527,10 @@ export class QueueService {
   async drainQueue(queueName: string) {
     const queue = this.getQueue(queueName);
     if (!queue) {
-      throw new Error(`Queue "${queueName}" not found`);
+      throw new AppError(
+        `Queue "${queueName}" not found`,
+        STATUS_CODE.NOT_FOUND,
+      );
     }
     await queue.drain();
     console.log(`[QueueService] 🚿 Drained queue "${queueName}"`);
@@ -457,3 +549,5 @@ export class QueueService {
     console.log('[QueueService] Shutdown complete.');
   }
 }
+
+export const queueService = new QueueService();

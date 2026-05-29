@@ -60,12 +60,21 @@ export const configuration = () => {
       ENCRYPTION_KEY: process.env.OTP_ENCRYPTION_KEY || 'your-encryption-key',
     },
     REDIS: {
-      URL: (process.env.REDIS_URL as string) || 'redis://localhost:6379',
+      queue_url:
+        (process.env.QUEUE_REDIS_URL as string) || 'redis://localhost:6379',
+      cache_url:
+        (process.env.CACHE_REDIS_URL as string) || 'redis://localhost:6379',
       port: parseInt(process.env.REDIS_PORT as string, 10) || 6379,
       host: process.env.REDIS_HOST || 'localhost',
       db: parseInt(process.env.REDIS_DB as string, 10) || 0,
       password: process.env.REDIS_PASSWORD || undefined,
       cacheTTL: parseInt(process.env.REDIS_CACHE_TTL as string, 10) || 600, // in seconds
+    },
+    QUEUE: {
+      QUEUE_NAME: process.env.QUEUE_NAME ?? 'default',
+    },
+    WORKER: {
+      CONCURRENCY: parseInt(process.env.WORKER_CONCURRENCY as string, 10) || 5,
     },
   };
 };

@@ -1,11 +1,8 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   BeforeInsert,
   BeforeUpdate,
-  UpdateDateColumn,
-  CreateDateColumn,
   DeleteDateColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -25,9 +22,6 @@ import {
 
 @Entity({ name: 'users', schema: 'public' })
 export default class User extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
-
   @Column({
     unique: true,
     nullable: false,
@@ -113,12 +107,6 @@ export default class User extends BaseEntity {
 
   @DeleteDateColumn()
   deletedAt!: Date | null;
-
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
 
   // @Column({ default: false })
   // isVerified!: boolean;

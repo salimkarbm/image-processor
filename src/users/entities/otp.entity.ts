@@ -1,11 +1,8 @@
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-import { OTP_TYPE } from '../../shared/enums/otp.enum';
 import BaseEntity from '../../repositories/base.entity';
 
 @Entity({ name: 'otp', schema: 'public' })
 export default class OTP extends BaseEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id!: string;
   @Column({
     comment:
       'Type of OTP, either for phone number verification or email verification',

@@ -151,12 +151,7 @@ export class OTPService {
 
   isExpired(expirationTime: Date): boolean {
     const currentTime = new Date();
-    const isExpired =
-      new Date(expirationTime).getTime() < currentTime.getTime();
-    if (isExpired) {
-      return true;
-    }
-    return false;
+    return new Date(expirationTime).getTime() < currentTime.getTime();
   }
 
   calculateExpiration(expirationTimeInMinutes: number = 10): Date {
