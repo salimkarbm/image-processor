@@ -1,5 +1,4 @@
 import { EntityManager } from 'typeorm';
-import OTP from '../../users/entities/otp.entity';
 import BaseRepository from '../../libs/base.repository';
 import { AppDataSource } from '../../config/typeorm.config';
 import Session from '../../users/entities/session.entity';

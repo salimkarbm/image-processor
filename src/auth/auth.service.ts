@@ -2,7 +2,12 @@ import { CookieOptions, Request, Response } from 'express';
 import * as bcrypt from 'bcrypt';
 import userRepo from '../repositories/user/user.repository';
 import AppError from '../shared/utils/errors/appError';
-import { ERROR_MESSAGE, STATUS_CODE } from '../shared/constants';
+import {
+  AuditAction,
+  AuditModule,
+  ERROR_MESSAGE,
+  STATUS_CODE,
+} from '../shared/constants';
 import emailService from '../shared/services/email.service';
 import otpService from '../shared/services/otp.service';
 import { ENVIRONMENT } from '../config';
@@ -15,8 +20,8 @@ import sessionRepo from '../repositories/user/session.repository';
 import { addMinutes, addSeconds, differenceInMinutes } from 'date-fns';
 import { CreateSession } from '../shared/types/users/session.type';
 import { IsNull } from 'typeorm';
-import { EmailMessageOptions } from '../shared/types';
 import { JOB_TYPES, queueService } from '../shared/services/queue.service';
+import { auditEvents } from '../audit/audit.service';
 
 export class AuthService {
   private readonly RESET_TOKEN_VALIDITY_MINUTES = 60;
@@ -482,7 +487,17 @@ export class AuthService {
       ),
       //expiresAt.setDate(expiresAt.getDate() + REFRESH_TOKEN_TTL_DAYS);
     });
-
+    auditEvents.emit('audit', {
+      action: AuditAction.LOGIN,
+      userId: validUser.id,
+      timestamp: new Date(),
+      ipAddress: req.ip || req.socket.remoteAddress || ('' as string),
+      userAgent: req.headers['user-agent'] || ('' as string),
+      module: AuditModule.AUTH,
+      userEmailSnapshot: validUser.email,
+      userRoleSnapshot: validUser.role,
+      metadata: { email: validUser.email, role: validUser.role, sessionId: session.id },
+    });
     return {
       accessToken: token,
       tokenExpiresInSeconds: ENVIRONMENT.JWT.accessTokenExpiryInSeconds,
